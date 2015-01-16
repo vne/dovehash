@@ -29,7 +29,8 @@ Dovehash.prototype.toString = function() {
 	return this.encoded;
 };
 Dovehash.prototype.inspect = function() {
-	return this.scheme + '.' + this.encoding + ' ' + this.pwhash + ' (' + (this.salt ? Dovehash.buffer2int(this.salt) : 'not salted') + ')';
+	return this.toString();
+	// return this.scheme + '.' + this.encoding + ' ' + this.pwhash + ' (' + (this.salt ? Dovehash.buffer2int(this.salt) : 'not salted') + ')';
 };
 Dovehash.prototype.parse = function() {
 	if (!this.encoded) { throw new Error("Dovehash: empty password hash"); }
@@ -155,6 +156,14 @@ Dovehash.getSalt = function(hash) {
 	return dh.salt;
 };
 
+Dovehash.genSalt = function(conf) {
+	var size = conf && conf.saltLength ? conf.saltLength : null,
+		salt = Math.round(Math.random() * Math.pow(2, 8 * 4)).toString(),
+		buf;
+	if (size && salt.length > size) { salt = salt.substr(size); }
+	return Dovehash.int2buffer(parseInt(salt, 10));
+};
+
 Dovehash.encode = function(scheme, pw, salt, enc) {
 	scheme = scheme.toUpperCase();
 	// detect password encoding from scheme if enc is not supplied
@@ -169,28 +178,29 @@ Dovehash.encode = function(scheme, pw, salt, enc) {
 	if (!conf) { throw new Error("Dovehash.encode: wrong scheme " + scheme); }
 	enc = enc ? enc.toLowerCase() : enc;
 	var hex = enc === "hex" ? true : false,                  // hex-encode if true, base64 otherwise
-		salted = conf.salted && typeof salt !== "undefined", // whether salt should be added
 		prefix = hex ? scheme + '.hex' : scheme,             // final scheme name
-		s = Dovehash.int2buffer(salt),                       // get salt as Buffer
-		hash, len, encoded, buf, hd;
+		hash, len, encoded, buf, hd, s;
 	// console.log('conf', conf, enc, hex);
 
+	// either generate new salt or get salt as Buffer
+	s = typeof salt === "undefined" ? Dovehash.genSalt(conf) : Dovehash.int2buffer(salt);
+
 	// create a resulting buffer with appropriate size
-	len = (conf.size || pw.length) + (salted && s ? s.length : 0);
+	len = (conf.size || pw.length) + (conf.salted && s ? s.length : 0);
 	buf = new Buffer(len);
 
 	// if hashing algorithm is defined for current scheme, use it to encode password
 	if (conf.algorithm) {
 		hash = crypto.createHash(conf.algorithm);
 		hash.update(pw);
-		if (salted) { hash.update(s); }
+		if (conf.salted) { hash.update(s); }
 		// get hash as buffer
 		hd = new Buffer(hash.digest('base64'), 'base64');
 		// console.log('encode', len, buf.length, s.length, hd.length);
 		// copy hash to resulting buffer
 		hd.copy(buf);
 		// copy salt to resulting buffer after hash if needed
-		if (salted) {
+		if (conf.salted) {
 			s.copy(buf, hd.length);
 		}
 	} else {
@@ -206,7 +216,7 @@ Dovehash.encode = function(scheme, pw, salt, enc) {
 		encoded += buf.toString();
 	}
 	// console.log('encoded', encoded);
-	return encoded;
+	return new Dovehash(encoded);
 };
 
 Dovehash.equal = function(hash, pw) {

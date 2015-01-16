@@ -69,6 +69,24 @@ describe('Dovehash should encode password to', function() {
 	it('SSHA256.HEX scheme',   function() { assert.equal(Dovehash.encode('SSHA256.HEX',   'abcdef', Dovehash.getSalt(data['SSHA256.HEX'])),   data['SSHA256.HEX']);   });
 //3001268677
 });
+describe('Dovehash should encode password w/o salt to', function() {
+	it('CLEARTEXT scheme',     function() { assert.equal(Dovehash.encode('CLEARTEXT',     password).equals(password), true);  });
+	it('CLEARTEXT.HEX scheme', function() { assert.equal(Dovehash.encode('CLEARTEXT.HEX', password).equals(password), true);  });
+	it('PLAIN scheme',         function() { assert.equal(Dovehash.encode('PLAIN',         password).equals(password), true);  });
+	it('PLAIN.HEX scheme',     function() { assert.equal(Dovehash.encode('PLAIN.HEX',     password).equals(password), true);  });
+	it('SHA scheme',           function() { assert.equal(Dovehash.encode('SHA',           password).equals(password), true);  });
+	it('SHA.HEX scheme',       function() { assert.equal(Dovehash.encode('SHA.HEX',       password).equals(password), true);  });
+	it('SHA1 scheme',          function() { assert.equal(Dovehash.encode('SHA1',          password).equals(password), true);  });
+	it('SHA1.HEX scheme',      function() { assert.equal(Dovehash.encode('SHA1.HEX',      password).equals(password), true);  });
+	it('SHA256 scheme',        function() { assert.equal(Dovehash.encode('SHA256',        password).equals(password), true);  });
+	it('SHA256.HEX scheme',    function() { assert.equal(Dovehash.encode('SHA256.HEX',    password).equals(password), true);  });
+	it('SMD5 scheme',          function() { assert.equal(Dovehash.encode('SMD5',          password).equals(password), true);  });
+	it('SMD5.HEX scheme',      function() { assert.equal(Dovehash.encode('SMD5.HEX',      password).equals(password), true);  });
+	it('SSHA scheme',          function() { assert.equal(Dovehash.encode('SSHA',          password).equals(password), true);  });
+	it('SSHA.HEX scheme',      function() { assert.equal(Dovehash.encode('SSHA.HEX',      password).equals(password), true);  });
+	it('SSHA256 scheme',       function() { assert.equal(Dovehash.encode('SSHA256',       password).equals(password), true);  });
+	it('SSHA256.HEX scheme',   function() { assert.equal(Dovehash.encode('SSHA256.HEX',   password).equals(password), true);  });
+});
 describe('Dovehash should NOT validate wrong password encoded with', function() {
 	it('CLEARTEXT scheme',     function() { assert.equal(Dovehash.equal(data['CLEARTEXT'],     wrongPassword), false); });
 	it('CLEARTEXT.HEX scheme', function() { assert.equal(Dovehash.equal(data['CLEARTEXT.HEX'], wrongPassword), false); });

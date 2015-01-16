@@ -43,7 +43,7 @@ If you have a plain password and want to encode it using one of the supported sc
 
 	var encoded = Dovehash.encode('SSHA', yourPlainPassword, salt);
 
-Note that currently salt is not generated automatically if nothing is supplied.
+If salt is not supplied, it is generated automatically.
 
 Finally, you can create a Dovehash instance for hashed password:
 
