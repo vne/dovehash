@@ -65,7 +65,7 @@ Dovehash.prototype.parse = function() {
 };
 Dovehash.prototype.decode = function(hash) {
 	var buf, e;
-	
+
 	// set this.pwhash and return if input data is not encoded
 	if (!this.encoding) {
 		this.pwhash = hash;
@@ -136,12 +136,15 @@ Dovehash.prototype.equals = function(pw) {
 Dovehash.prototype.encode = function(pw, enc) {
 	return Dovehash.encode(this.scheme, pw, this.salt, enc);
 };
+Dovehash.prototype.getSalt = function() {
+	return Dovehash.buffer2int(this.salt);
+};
 
-Dovehash.int2buffer = function(int) {
-	if (typeof int === "undefined" || int === null) { return; }
-	if (int.constructor === Buffer) { return int; }
+Dovehash.int2buffer = function(i) {
+	if (typeof i === "undefined" || i === null) { return; }
+	if (i.constructor === Buffer) { return i; }
 	var b = new Buffer(4);
-	Dovehash.littleEndian ? b.writeUInt32LE(int, 0) : b.writeUInt32BE(int, 0);
+	Dovehash.littleEndian ? b.writeUInt32LE(i, 0) : b.writeUInt32BE(i, 0);
 	return b;
 };
 
@@ -152,8 +155,7 @@ Dovehash.buffer2int = function(buf) {
 };
 
 Dovehash.getSalt = function(hash) {
-	var dh = new Dovehash(hash);
-	return dh.salt;
+	return new Dovehash(hash).getSalt();
 };
 
 Dovehash.genSalt = function(conf) {

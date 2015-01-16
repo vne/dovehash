@@ -28,6 +28,11 @@ var password = "abcdef",
 	bad = {
 		encoding: "{SSHA.junk}1bc74958f014572d9acd6242c23ca173b0cbe9717441971e",
 		unknown: "{UNKNOWN}junk"
+	},
+	salt = {
+		SMD5: 3897271145,
+		SSHA: 3001268677,
+		SSHA256: 3133251172
 	};
 
 describe('Dovehash should validate password encoded with', function() {
@@ -135,6 +140,9 @@ describe('Dovehash should return', function() {
 			Dovehash.encode('SSHA', password).toString()
 		);
 	});
+	it('integer salt for SMD5 hashed password',       function() { assert.equal(new Dovehash(data.SMD5          ).getSalt(), salt.SMD5          ); });
+	it('integer salt for SSHA hashed password',       function() { assert.equal(new Dovehash(data.SSHA          ).getSalt(), salt.SSHA          ); });
+	it('integer salt for SSHA256 hashed password',    function() { assert.equal(new Dovehash(data.SSHA256       ).getSalt(), salt.SSHA256       ); });
 });
 
 
