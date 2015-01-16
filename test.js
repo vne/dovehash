@@ -129,6 +129,12 @@ describe('Dovehash should return', function() {
 			salt: "3001268677"
 		});
 	});
+	it('two different hashes for same password encoded with automatic salt generation', function() {
+		assert.notEqual(
+			Dovehash.encode('SSHA', password).toString(),
+			Dovehash.encode('SSHA', password).toString()
+		);
+	});
 });
 
 
