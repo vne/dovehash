@@ -43,7 +43,8 @@ If you have a plain password and want to encode it using one of the supported sc
 
 	var encoded = Dovehash.encode('SSHA', yourPlainPassword, salt);
 
-If salt is not supplied, it is generated automatically.
+If salt is not supplied, it is generated automatically. Dovehash.encode returns Dovehash instance that
+can be stringified to Dovecot-style hash via .toString or .inspect call.
 
 Finally, you can create a Dovehash instance for hashed password:
 
@@ -61,14 +62,16 @@ You can create a Dovehash instance for hashed password (constructor may throw ex
 
 This instance will have the following methods:
 
- - equals(clearTextPassword) - calculate appropriate hash for clearTextPassword and compare with the hashed one
+ - equals(clearTextPassword) - calculate appropriate hash for clearTextPassword and compare with the hashed one. Returns either true or false.
  - toJSON() - get hash properties as JSON (currently: input, scheme, encoding, salt, password, where input is the original string and password is hex-encoded hash)
+ - toString() - get Dovecot-style hash
+ - inspect() - save as toString()
 
 Dovehash also has several static methods:
 
- - Dovehash.equal(hashed, clearText) - compare clearText to hashed, catch exceptions and return false if anything is caught
- - encode(scheme, clearText, salt) - encode clearText to scheme with salt
- - getSalt(hashed) - parse hashed password and return salt if there is any
+ - Dovehash.equal(hashed, clearText) - compare clearText to hashed, catch exceptions and return false if anything is caught. Returns either true or false.
+ - encode(scheme, clearText, salt) - encode clearText to scheme with salt. Returns Dovehash instance.
+ - getSalt(hashed) - parse hashed password and return salt if there is any. Returns Buffer.
 
 Errors
 ------
