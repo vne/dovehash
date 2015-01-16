@@ -5,27 +5,34 @@ module.exports = exports = Dovehash;
 
 var DEFAULT_ENCODING = 'base64',
 	HASH = {
-		PLAIN:     { size: null, salted: false, encoded: false, algorithm: null,     crypt: false  },
-		CLEARTEXT: { size: null, salted: false, encoded: false, algorithm: null,     crypt: false  },
-		"PLAIN.HEX":     { size: null, salted: false, encoded: true, algorithm: null,     crypt: false  },
-		"CLEARTEXT.HEX": { size: null, salted: false, encoded: true, algorithm: null,     crypt: false  },
-		MD5:       { size: 16,   salted: false, encoded: true,  algorithm: 'md5',    crypt: '$1$'  },
-		SHA:       { size: 20,   salted: false, encoded: true,  algorithm: 'sha1',   crypt: false  },
-		SHA1:      { size: 20,   salted: false, encoded: true,  algorithm: 'sha1',   crypt: false  },
-		SHA256:    { size: 32,   salted: false, encoded: true,  algorithm: 'sha256', crypt: false  },
-		SHA512:    { size: 64,   salted: false, encoded: true,  algorithm: 'sha512', crypt: false  },
-		SMD5:      { size: 16,   salted: true,  encoded: true,  algorithm: 'md5',    crypt: false  },
-		SSHA:      { size: 20,   salted: true,  encoded: true,  algorithm: 'sha1',   crypt: false  },
-		SSHA256:   { size: 32,   salted: true,  encoded: true,  algorithm: 'sha256', crypt: false  },
-		SSHA512:   { size: 64,   salted: true,  encoded: true,  algorithm: 'sha512', crypt: false  }
+		PLAIN:           { size: null, salted: false, encoded: false, algorithm: null,     crypt: false  },
+		CLEARTEXT:       { size: null, salted: false, encoded: false, algorithm: null,     crypt: false  },
+		"PLAIN.HEX":     { size: null, salted: false, encoded: true,  algorithm: null,     crypt: false  },
+		"CLEARTEXT.HEX": { size: null, salted: false, encoded: true,  algorithm: null,     crypt: false  },
+		MD5:             { size: 16,   salted: false, encoded: true,  algorithm: 'md5',    crypt: '$1$'  },
+		SHA:             { size: 20,   salted: false, encoded: true,  algorithm: 'sha1',   crypt: false  },
+		SHA1:            { size: 20,   salted: false, encoded: true,  algorithm: 'sha1',   crypt: false  },
+		SHA256:          { size: 32,   salted: false, encoded: true,  algorithm: 'sha256', crypt: false  },
+		SHA512:          { size: 64,   salted: false, encoded: true,  algorithm: 'sha512', crypt: false  },
+		SMD5:            { size: 16,   salted: true,  encoded: true,  algorithm: 'md5',    crypt: false  },
+		SSHA:            { size: 20,   salted: true,  encoded: true,  algorithm: 'sha1',   crypt: false  },
+		SSHA256:         { size: 32,   salted: true,  encoded: true,  algorithm: 'sha256', crypt: false  },
+		SSHA512:         { size: 64,   salted: true,  encoded: true,  algorithm: 'sha512', crypt: false  }
 	};
 
 function Dovehash(str) {
 	this.encoded = str;
 	this.parse();
 }
+Dovehash.littleEndian = false;
+Dovehash.prototype.toString = function() {
+	return this.encoded;
+};
+Dovehash.prototype.inspect = function() {
+	return this.scheme + '.' + this.encoding + ' ' + this.pwhash + ' (' + (this.salt ? Dovehash.buffer2int(this.salt) : 'not salted') + ')';
+};
 Dovehash.prototype.parse = function() {
-	if (!this.encoded) { return; }
+	if (!this.encoded) { throw new Error("Dovehash: empty password hash"); }
 
 	this.scheme = null;                   // hash name (e.g. SSHA)
 	this.salt = null;                     // password salt as hex
@@ -47,7 +54,8 @@ Dovehash.prototype.parse = function() {
 		this.encoding = this.scheme.substr(didx + 1);
 		this.scheme = this.scheme.substr(0, didx);
 	}
-	this.conf = HASH[this.scheme + '.' + this.encoding] || HASH[this.scheme] || {};
+	this.conf = HASH[this.scheme + '.' + this.encoding] || HASH[this.scheme];
+	if (!this.conf) { throw new Error("Dovehash: " + this.scheme + " scheme is currently not supported"); }
 	// decode original password hash and strip salt to this.salt if there is any
 	this.decode(this.hash);
 	// if (this.has_salt(this.scheme) && HASHSIZE[this.scheme]) {
@@ -55,40 +63,42 @@ Dovehash.prototype.parse = function() {
 	// }
 };
 Dovehash.prototype.decode = function(hash) {
+	var buf, e;
+	
+	// set this.pwhash and return if input data is not encoded
 	if (!this.encoding) {
 		this.pwhash = hash;
 		return;
 	}
-	var e = this.encoding.toLowerCase(),
-		buf;
-	if (['b64', 'base64', 'hex'].indexOf(e) < 0) { return; }
-	if (e === 'hex') {
-		buf = new Buffer(hash, 'hex');
-	} else {
-		buf = new Buffer(hash, 'base64');
+
+	// check for known encoding
+	e = this.encoding.toLowerCase();
+	if (['b64', 'base64', 'hex'].indexOf(e) < 0) {
+		throw new Error("Dovehash: an unknown password encoding '" + e + "' (known are b64, base64 and hex)");
 	}
+
+	// normalize input hash: store hex for encoded passwords and clear text for others
+	buf = new Buffer(hash, e === 'hex' ? 'hex' : 'base64');
 	this.pwhash = this.conf.encoded ? buf.toString('hex') : buf.toString();
 	// console.log('decode', this.pwhash);
+
+	// check whether we are using some crypt algorithm
 	if (this.conf.crypt && hash.indexOf(this.conf.crypt) === 0) {
 		throw new Error("Dovehash: crypt hashes are currently not supported");
-		// console.log('crypt');
-		var rpw = buf.toString().substr(this.conf.crypt.length),
-			rsidx = Math.min(rpw.indexOf('$'), 8),
-			rsalt = rpw.substr(0, rsidx),
-			rhash = rpw.substr(rsidx + 1);
-		this.pwhash = rhash;
-		this.salt = rsalt;
+		// var rpw = buf.toString().substr(this.conf.crypt.length),
+		// 	rsidx = Math.min(rpw.indexOf('$'), 8),
+		// 	rsalt = rpw.substr(0, rsidx),
+		// 	rhash = rpw.substr(rsidx + 1);
+		// this.pwhash = rhash;
+		// this.salt = rsalt;
 	}
-	// console.log('salt bytes', 138, 33, 110, 86);
 	// console.log('before stripping', e, hash, buf);
+
+	// strip salt if there is any
 	if (this.conf.salted) {
 		this.pwhash = buf.toString('hex', 0, this.conf.size);
 		this.salt = new Buffer(buf.toString('hex', this.conf.size), 'hex');
-		// this.salt = this.pwhash.substr(HASH[this.scheme].size * 2);
-		// console.log('salted sub', this.scheme, this.encoding, this.conf.size, this.pwhash, this.salt, this.salt.readUInt32BE(0));
-		// var sbuf = new Buffer(sub, 'hex');
-		// this.salt = sbuf.readUInt32LE(0);
-		// this.pwhash = this.pwhash.substr(0, HASH[this.scheme].size * 2);
+		// console.log('salted', this.scheme, this.encoding, this.conf.size, this.pwhash, this.salt, this.salt.readUInt32BE(0));
 	}
 };
 Dovehash.prototype.toJSON = function() {
@@ -96,19 +106,15 @@ Dovehash.prototype.toJSON = function() {
 		input: this.encoded,
 		scheme: this.scheme,
 		encoding: this.encoding,
-		salt: this.salt && this.salt.readUInt32BE ? this.salt.readUInt32BE(0) : this.salt,
+		salt: Dovehash.buffer2int(this.salt),
 		password: this.pwhash
 	};
 };
 Dovehash.prototype.equals = function(pw) {
 	// console.log(this.toJSON());
 	if (!this.scheme || !this.conf || !this.conf.algorithm) {
-		if (this.conf.encoded) {
-			var b = new Buffer(pw);
-			return this.pwhash === b.toString(this.encoding.toUpperCase() === "HEX" ? 'hex' : 'base64');
-		} else {
-			return this.pwhash === pw;
-		}
+		if (!this.conf || !this.conf.encoded) { return this.pwhash === pw; };
+		return this.pwhash === new Buffer(pw).toString(this.encoding.toUpperCase() === "HEX" ? 'hex' : 'base64');
 	}
 	var hash, digest;
 	if (this.conf.crypt) {
@@ -134,14 +140,14 @@ Dovehash.int2buffer = function(int) {
 	if (typeof int === "undefined" || int === null) { return; }
 	if (int.constructor === Buffer) { return int; }
 	var b = new Buffer(4);
-	b.writeUInt32BE(int, 0);
+	Dovehash.littleEndian ? b.writeUInt32LE(int, 0) : b.writeUInt32BE(int, 0);
 	return b;
 };
 
 Dovehash.buffer2int = function(buf) {
 	if (typeof buf === "undefined" || buf === null) { return; }
 	if (buf.constructor !== Buffer) { return buf; }
-	return buf.readUInt32BE(0);
+	return Dovehash.littleEndian ? buf.readUInt32LE(0) : buf.readUInt32BE(0);
 };
 
 Dovehash.getSalt = function(hash) {
@@ -151,41 +157,48 @@ Dovehash.getSalt = function(hash) {
 
 Dovehash.encode = function(scheme, pw, salt, enc) {
 	scheme = scheme.toUpperCase();
+	// detect password encoding from scheme if enc is not supplied
 	if (scheme.indexOf('.') > 0) {
 		if (typeof enc === "undefined") {
 			enc = scheme.substr(scheme.indexOf('.') + 1);
 		}
 		scheme = scheme.substr(0, scheme.indexOf('.'));
 	}
+	// get scheme configuration
 	var conf = HASH[scheme + '.' + enc] || HASH[scheme];
-	enc = enc ? enc.toLowerCase() : enc;
 	if (!conf) { throw new Error("Dovehash.encode: wrong scheme " + scheme); }
-	var hex = enc === "hex" ? true : false,
-		salted = conf.salted && typeof salt !== "undefined",
-		prefix = hex ? scheme + '.hex' : scheme,
-		s = Dovehash.int2buffer(salt),
+	enc = enc ? enc.toLowerCase() : enc;
+	var hex = enc === "hex" ? true : false,                  // hex-encode if true, base64 otherwise
+		salted = conf.salted && typeof salt !== "undefined", // whether salt should be added
+		prefix = hex ? scheme + '.hex' : scheme,             // final scheme name
+		s = Dovehash.int2buffer(salt),                       // get salt as Buffer
 		hash, len, encoded, buf, hd;
 	// console.log('conf', conf, enc, hex);
 
+	// create a resulting buffer with appropriate size
 	len = (conf.size || pw.length) + (salted && s ? s.length : 0);
 	buf = new Buffer(len);
 
+	// if hashing algorithm is defined for current scheme, use it to encode password
 	if (conf.algorithm) {
 		hash = crypto.createHash(conf.algorithm);
-
 		hash.update(pw);
 		if (salted) { hash.update(s); }
+		// get hash as buffer
 		hd = new Buffer(hash.digest('base64'), 'base64');
 		// console.log('encode', len, buf.length, s.length, hd.length);
+		// copy hash to resulting buffer
 		hd.copy(buf);
+		// copy salt to resulting buffer after hash if needed
 		if (salted) {
 			s.copy(buf, hd.length);
 		}
 	} else {
+		// simply write password to resulting buffer
 		buf.write(pw);
-		// console.log('not encoded', buf, pw, len);
 	}
 
+	// create hash string in Dovecot style
 	encoded = '{' + prefix + '}';
 	if (conf.encoded) {
 		encoded += buf.toString(hex ? 'hex' : 'base64');
@@ -196,6 +209,10 @@ Dovehash.encode = function(scheme, pw, salt, enc) {
 	return encoded;
 };
 
-Dovehash.equals = function(hash, pw) {
-	return new Dovehash(hash).equals(pw);
+Dovehash.equal = function(hash, pw) {
+	try {
+		return new Dovehash(hash).equals(pw);
+	} catch(e) {
+		return false;
+	}
 };

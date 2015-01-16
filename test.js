@@ -1,7 +1,10 @@
 var assert = require('assert'),
 	Dovehash = require('./index');
 
+Dovehash.littleEndian = false;
+
 var password = "abcdef",
+	wrongPassword = "Abcdef",
 	data = {
 		"CLEARTEXT": "{CLEARTEXT}abcdef",
 		"CLEARTEXT.HEX": "{CLEARTEXT.hex}616263646566",
@@ -18,37 +21,34 @@ var password = "abcdef",
 		"SMD5": "{SMD5}LHP35YJionafcv2qprLa4OhLo2k=",
 		"SMD5.HEX": "{SMD5.hex}fa87931322d2430ea41a5cc984bd757c50ae3552",
 		"SSHA": "{SSHA}PTggDCOUPEVj5h7bZjhxfKWQBpey47nF", // orig
-		// "SSHA": "{SSHA}Njc0MGQxZWNiNDhjNWM5Y2EzYjJhM2NiMWNhMmY0YjRkNDQ4NzQ3MzEyMzQ1Ng==", // python
-		// "SSHA.HEX": "{SSHA}Z0DR7LSMXJyjsqPLHKL0tNRIdHMSNFY=", // js
 		"SSHA.HEX": "{SSHA.hex}1bc74958f014572d9acd6242c23ca173b0cbe9717441971e", // orig
-		// "SSHA.HEX": "{SSHA.HEX}d3e761519394d03cb78f11b11b1b307fd88790848a216e56", // c
 		"SSHA256": "{SSHA256}GijHt7asXeV0hUn5rVy2gM/aEWAKnb3FWvz+VKA55hS6wZ5k",
 		"SSHA256.HEX": "{SSHA256.hex}1394de2e486bc75156e8109bb2ed347e4dc0a1af0f76e92b59a65e650495b73187c66c9c"
+	},
+	bad = {
+		encoding: "{SSHA.junk}1bc74958f014572d9acd6242c23ca173b0cbe9717441971e",
+		unknown: "{UNKNOWN}junk"
 	};
-// SSHA_SALT: 0: 138
-// SSHA_SALT: 1: 33
-// SSHA_SALT: 2: 110
-// SSHA_SALT: 3: 86
 
 describe('Dovehash should validate password encoded with', function() {
-	it('CLEARTEXT scheme',     function() { assert.equal(Dovehash.equals(data['CLEARTEXT'],     password), true); });
-	it('CLEARTEXT.HEX scheme', function() { assert.equal(Dovehash.equals(data['CLEARTEXT.HEX'], password), true); });
-	// it('MD5 scheme',           function() { assert.equal(Dovehash.equals(data['MD5'],           password), true); });
-	// it('MD5.HEX scheme',       function() { assert.equal(Dovehash.equals(data['MD5.HEX'],       password), true); });
-	it('PLAIN scheme',         function() { assert.equal(Dovehash.equals(data['PLAIN'],         password), true); });
-	it('PLAIN.HEX scheme',     function() { assert.equal(Dovehash.equals(data['PLAIN.HEX'],     password), true); });
-	it('SHA scheme',           function() { assert.equal(Dovehash.equals(data['SHA'],           password), true); });
-	it('SHA.HEX scheme',       function() { assert.equal(Dovehash.equals(data['SHA.HEX'],       password), true); });
-	it('SHA1 scheme',          function() { assert.equal(Dovehash.equals(data['SHA1'],          password), true); });
-	it('SHA1.HEX scheme',      function() { assert.equal(Dovehash.equals(data['SHA1.HEX'],      password), true); });
-	it('SHA256 scheme',        function() { assert.equal(Dovehash.equals(data['SHA256'],        password), true); });
-	it('SHA256.HEX scheme',    function() { assert.equal(Dovehash.equals(data['SHA256.HEX'],    password), true); });
-	it('SMD5 scheme',          function() { assert.equal(Dovehash.equals(data['SMD5'],          password), true); });
-	it('SMD5.HEX scheme',      function() { assert.equal(Dovehash.equals(data['SMD5.HEX'],      password), true); });
-	it('SSHA scheme',          function() { assert.equal(Dovehash.equals(data['SSHA'],          password), true); });
-	it('SSHA.HEX scheme',      function() { assert.equal(Dovehash.equals(data['SSHA.HEX'],      password), true); });
-	it('SSHA256 scheme',       function() { assert.equal(Dovehash.equals(data['SSHA256'],       password), true); });
-	it('SSHA256.HEX scheme',   function() { assert.equal(Dovehash.equals(data['SSHA256.HEX'],   password), true); });
+	it('CLEARTEXT scheme',     function() { assert.equal(Dovehash.equal(data['CLEARTEXT'],     password), true); });
+	it('CLEARTEXT.HEX scheme', function() { assert.equal(Dovehash.equal(data['CLEARTEXT.HEX'], password), true); });
+	// it('MD5 scheme',           function() { assert.equal(Dovehash.equal(data['MD5'],           password), true); });
+	// it('MD5.HEX scheme',       function() { assert.equal(Dovehash.equal(data['MD5.HEX'],       password), true); });
+	it('PLAIN scheme',         function() { assert.equal(Dovehash.equal(data['PLAIN'],         password), true); });
+	it('PLAIN.HEX scheme',     function() { assert.equal(Dovehash.equal(data['PLAIN.HEX'],     password), true); });
+	it('SHA scheme',           function() { assert.equal(Dovehash.equal(data['SHA'],           password), true); });
+	it('SHA.HEX scheme',       function() { assert.equal(Dovehash.equal(data['SHA.HEX'],       password), true); });
+	it('SHA1 scheme',          function() { assert.equal(Dovehash.equal(data['SHA1'],          password), true); });
+	it('SHA1.HEX scheme',      function() { assert.equal(Dovehash.equal(data['SHA1.HEX'],      password), true); });
+	it('SHA256 scheme',        function() { assert.equal(Dovehash.equal(data['SHA256'],        password), true); });
+	it('SHA256.HEX scheme',    function() { assert.equal(Dovehash.equal(data['SHA256.HEX'],    password), true); });
+	it('SMD5 scheme',          function() { assert.equal(Dovehash.equal(data['SMD5'],          password), true); });
+	it('SMD5.HEX scheme',      function() { assert.equal(Dovehash.equal(data['SMD5.HEX'],      password), true); });
+	it('SSHA scheme',          function() { assert.equal(Dovehash.equal(data['SSHA'],          password), true); });
+	it('SSHA.HEX scheme',      function() { assert.equal(Dovehash.equal(data['SSHA.HEX'],      password), true); });
+	it('SSHA256 scheme',       function() { assert.equal(Dovehash.equal(data['SSHA256'],       password), true); });
+	it('SSHA256.HEX scheme',   function() { assert.equal(Dovehash.equal(data['SSHA256.HEX'],   password), true); });
 });
 describe('Dovehash should encode password to', function() {
 	it('CLEARTEXT scheme',     function() { assert.equal(Dovehash.encode('CLEARTEXT',     'abcdef', Dovehash.getSalt(data['CLEARTEXT'])),     data['CLEARTEXT']);     });
@@ -69,7 +69,49 @@ describe('Dovehash should encode password to', function() {
 	it('SSHA256.HEX scheme',   function() { assert.equal(Dovehash.encode('SSHA256.HEX',   'abcdef', Dovehash.getSalt(data['SSHA256.HEX'])),   data['SSHA256.HEX']);   });
 //3001268677
 });
-
+describe('Dovehash should NOT validate wrong password encoded with', function() {
+	it('CLEARTEXT scheme',     function() { assert.equal(Dovehash.equal(data['CLEARTEXT'],     wrongPassword), false); });
+	it('CLEARTEXT.HEX scheme', function() { assert.equal(Dovehash.equal(data['CLEARTEXT.HEX'], wrongPassword), false); });
+	it('PLAIN scheme',         function() { assert.equal(Dovehash.equal(data['PLAIN'],         wrongPassword), false); });
+	it('PLAIN.HEX scheme',     function() { assert.equal(Dovehash.equal(data['PLAIN.HEX'],     wrongPassword), false); });
+	it('SHA scheme',           function() { assert.equal(Dovehash.equal(data['SHA'],           wrongPassword), false); });
+	it('SHA.HEX scheme',       function() { assert.equal(Dovehash.equal(data['SHA.HEX'],       wrongPassword), false); });
+	it('SHA1 scheme',          function() { assert.equal(Dovehash.equal(data['SHA1'],          wrongPassword), false); });
+	it('SHA1.HEX scheme',      function() { assert.equal(Dovehash.equal(data['SHA1.HEX'],      wrongPassword), false); });
+	it('SHA256 scheme',        function() { assert.equal(Dovehash.equal(data['SHA256'],        wrongPassword), false); });
+	it('SHA256.HEX scheme',    function() { assert.equal(Dovehash.equal(data['SHA256.HEX'],    wrongPassword), false); });
+	it('SMD5 scheme',          function() { assert.equal(Dovehash.equal(data['SMD5'],          wrongPassword), false); });
+	it('SMD5.HEX scheme',      function() { assert.equal(Dovehash.equal(data['SMD5.HEX'],      wrongPassword), false); });
+	it('SSHA scheme',          function() { assert.equal(Dovehash.equal(data['SSHA'],          wrongPassword), false); });
+	it('SSHA.HEX scheme',      function() { assert.equal(Dovehash.equal(data['SSHA.HEX'],      wrongPassword), false); });
+	it('SSHA256 scheme',       function() { assert.equal(Dovehash.equal(data['SSHA256'],       wrongPassword), false); });
+	it('SSHA256.HEX scheme',   function() { assert.equal(Dovehash.equal(data['SSHA256.HEX'],   wrongPassword), false); });
+});
+describe('Dovehash should handle', function() {
+	it('bad encoding scheme throwning an exception', function() {
+		assert.throws(function() { new Dovehash(bad.encoding); }, /unknown password encoding/);
+	});
+	it('unsupported schemes throwning an exception', function() {
+		assert.throws(function() { new Dovehash(bad.unknown); }, /scheme is currently not supported/);
+	});
+	it('crypt schemes as unsupported', function() {
+		assert.throws(function() { new Dovehash(data.MD5); }, /crypt hashes are currently not supported/);
+	});
+	it('empty password hashes throwning an exception', function() {
+		assert.throws(function() { new Dovehash(); }, /empty password hash/);
+	});
+});
+describe('Dovehash should return', function() {
+	it('JSON describing the hash', function() {
+		assert.deepEqual(new Dovehash(data.SSHA).toJSON(), {
+			input: "{SSHA}PTggDCOUPEVj5h7bZjhxfKWQBpey47nF",
+			scheme: "SSHA",
+			encoding: "base64",
+			password: "3d38200c23943c4563e61edb6638717ca5900697",
+			salt: "3001268677"
+		});
+	});
+});
 
 
 		// "CRAM-MD5": "{CRAM-MD5}991c7f952639e48ce665db7e81082b3676509882b75ad0215436cb760cddf8d3",

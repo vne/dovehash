@@ -37,7 +37,7 @@ Then, if you have some hashed and, probably, salted password in Dovecot style
 (e.g. "{SSHA}PTggDCOUPEVj5h7bZjhxfKWQBpey47nF") and a plain password, supplied by user, (e.g. "abcdef")
 you can easily check them for equivalence:
 
-	var passwordsMatch = Dovehash.equals(hashedPassword, userSuppliedPassword);
+	var passwordsMatch = Dovehash.equal(hashedPassword, userSuppliedPassword);
 
 If you have a plain password and want to encode it using one of the supported schemes:
 
@@ -51,6 +51,29 @@ Finally, you can create a Dovehash instance for hashed password:
 	console.log(dh.toJSON());
 
 This will parse hashed password and give you access to hashing algorithm, encoding, password hash and salt.
+
+API
+---
+
+You can create a Dovehash instance for hashed password (constructor may throw exceptions):
+
+	var dh = new Dovehash(hashedPassword);
+
+This instance will have the following methods:
+
+ - equals(clearTextPassword) - calculate appropriate hash for clearTextPassword and compare with the hashed one
+ - toJSON() - get hash properties as JSON (currently: input, scheme, encoding, salt, password, where input is the original string and password is hex-encoded hash)
+
+Dovehash also has several static methods:
+
+ - Dovehash.equal(hashed, clearText) - compare clearText to hashed, catch exceptions and return false if anything is caught
+ - encode(scheme, clearText, salt) - encode clearText to scheme with salt
+ - getSalt(hashed) - parse hashed password and return salt if there is any
+
+Errors
+------
+
+Dovehash constructor throws exceptions if something is wrong. Go catch them :)
 
 Testing
 -------
