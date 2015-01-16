@@ -175,7 +175,7 @@ Dovehash.encode = function(scheme, pw, salt, enc) {
 
 		hash.update(pw);
 		if (salted) { hash.update(s); }
-		hd = hash.digest();
+		hd = new Buffer(hash.digest('base64'), 'base64');
 		// console.log('encode', len, buf.length, s.length, hd.length);
 		hd.copy(buf);
 		if (salted) {
